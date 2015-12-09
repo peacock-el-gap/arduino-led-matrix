@@ -10,6 +10,13 @@
 
 
 //----------------------------------------------
+// Which Timer will be used
+//#define TIMER_1
+#define TIMER_2
+//----------------------------------------------
+
+
+//----------------------------------------------
 // Shift register pins
 // Pins connected to 74HC595
 // ST_CP = latch
@@ -91,10 +98,9 @@ void setup() {
 
 
 //----------------------------------------------
-// interrupt service routine Timer1
-// @todo: change to Timer2
+// interrupt service body
 // @todo: do not use LED_PATTERN, use brightness level only
-ISR( TIMER1_COMPA_vect ) {
+void interruptBody() {
   #ifdef DEBUG_MODE
     digitalWrite( DEBUG_pin, HIGH );
   #endif
@@ -103,8 +109,26 @@ ISR( TIMER1_COMPA_vect ) {
 
   #ifdef DEBUG_MODE
     digitalWrite( DEBUG_pin, LOW );
-  #endif
+  #endif  
 }
+
+
+#ifdef TIMER_1
+  //----------------------------------------------
+  // interrupt service routine Timer1
+  ISR( TIMER1_COMPA_vect ) {
+    interruptBody();
+  }
+#endif
+
+
+#ifdef TIMER_2
+  //----------------------------------------------
+  // interrupt service routine Timer2
+  ISR( TIMER2_COMPA_vect ) {
+    interruptBody();
+  }
+#endif
 
 
 //----------------------------------------------
@@ -125,37 +149,74 @@ void setUpInterrupts(  ) {
   // disable all interrupts
   noInterrupts();
   
-  Serial.println(F( "T1 - initialize" ));
-  //***************************
-  // timer1
-  {
-    TCCR1A = 0;
-    TCCR1B = 0;
-    TCNT1  = 0; // Timer1 counter
-  
-    //                        prescaler
-    //                               |   frequency
-    //                               |    |
-    //                               v    v
-    // compare match register 16MHz/64/2000Hz
-    OCR1A   = 16000000 / PRESCALER / FREQUENCY - 1;
-    TCCR1B |= (1 << WGM12);  // CTC mode
+  #ifdef TIMER_1
+    Serial.println(F( "T1 - initialize" ));
+    //---------------------------
+    // timer1
+    {
+      TCCR1A = 0;
+      TCCR1B = 0;
+      TCNT1  = 0; // Timer1 counter
     
-    switch (PRESCALER) {
-      case    1:  TCCR1B &= ~(1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B |=  (1 << CS10); break; // 001
-      case    8:  TCCR1B &= ~(1 << CS12); TCCR1B |=  (1 << CS11); TCCR1B &= ~(1 << CS10); break; // 010
-      case   64:  TCCR1B &= ~(1 << CS12); TCCR1B |=  (1 << CS11); TCCR1B |=  (1 << CS10); break; // 011
-      case  256:  TCCR1B |=  (1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B &= ~(1 << CS10); break; // 100
-      case 1024:  TCCR1B |=  (1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B |=  (1 << CS10); break; // 101
-      default:    TCCR1B &= ~(1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B &= ~(1 << CS10); break; // 000
+      //                        prescaler
+      //                               |   frequency
+      //                               |    |
+      //                               v    v
+      // compare match register 16MHz/64/2000Hz
+      OCR1A   = 16000000 / PRESCALER / FREQUENCY - 1;
+      TCCR1B |= (1 << WGM12);  // CTC mode
+      
+      switch (PRESCALER) {
+        case    1:  TCCR1B &= ~(1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B |=  (1 << CS10); break; // 001
+        case    8:  TCCR1B &= ~(1 << CS12); TCCR1B |=  (1 << CS11); TCCR1B &= ~(1 << CS10); break; // 010
+        case   64:  TCCR1B &= ~(1 << CS12); TCCR1B |=  (1 << CS11); TCCR1B |=  (1 << CS10); break; // 011
+        case  256:  TCCR1B |=  (1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B &= ~(1 << CS10); break; // 100
+        case 1024:  TCCR1B |=  (1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B |=  (1 << CS10); break; // 101
+        default:    TCCR1B &= ~(1 << CS12); TCCR1B &= ~(1 << CS11); TCCR1B &= ~(1 << CS10); break; // 000
+      }
+      
+      TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
     }
-    
-    TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
-  }
-  // timer 1 initialized
-  //***************************
-  Serial.println(F( "T1 - done" ));
+    // timer 1 initialized
+    //---------------------------
+    Serial.println(F( "T1 - done" ));
+  #endif
 
+  
+  #ifdef TIMER_2
+    Serial.println(F( "T2 - initialize" ));
+    //---------------------------
+    // timer2
+    {
+      TCCR2A = 0;
+      TCCR2B = 0;
+      TCNT2  = 0; // Timer2 counter
+    
+      //                        prescaler
+      //                               |   frequency
+      //                               |    |
+      //                               v    v
+      // compare match register 16MHz/64/2000Hz
+      OCR2A   = 16000000 / PRESCALER / FREQUENCY - 1;
+      TCCR2B |= (1 << WGM22);  // CTC mode
+      
+      switch (PRESCALER) {
+        case    1:  TCCR2B &= ~(1 << CS22); TCCR2B &= ~(1 << CS21); TCCR2B |=  (1 << CS20); break; // 001
+        case    8:  TCCR2B &= ~(1 << CS22); TCCR2B |=  (1 << CS21); TCCR2B &= ~(1 << CS20); break; // 010
+        case   64:  TCCR2B &= ~(1 << CS22); TCCR2B |=  (1 << CS21); TCCR2B |=  (1 << CS20); break; // 011
+        case  256:  TCCR2B |=  (1 << CS22); TCCR2B &= ~(1 << CS21); TCCR2B &= ~(1 << CS20); break; // 100
+        case 1024:  TCCR2B |=  (1 << CS22); TCCR2B &= ~(1 << CS21); TCCR2B |=  (1 << CS20); break; // 101
+        default:    TCCR2B &= ~(1 << CS22); TCCR2B &= ~(1 << CS21); TCCR2B &= ~(1 << CS20); break; // 000
+      }
+      
+      TIMSK2 |= (1 << OCIE2A); // enable timer compare interrupt
+    }
+    // timer 2 initialized
+    //---------------------------
+    Serial.println(F( "T2 - done" ));
+  #endif
+
+  
   // enable all interrupts
   interrupts();
 }
